@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
-      - run: npm ci
+      - run: npm i
       - run: npm run lint
       - run: npm run test:unit
       - run: npm run build
