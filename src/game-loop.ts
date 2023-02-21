@@ -1,4 +1,3 @@
-
 type ConfigParameter = Record<string, unknown>;
 type StateParameter = Record<string, unknown>;
 type GameStateParameter = 'notStarted' | 'running' | 'stopped';
