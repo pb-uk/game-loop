@@ -1,13 +1,13 @@
 {
-  "name": "game-loop",
-  "version": "0.9.0-dev",
+  "name": "@pbuk/game-loop",
+  "version": "1.0.0",
   "description": "Game loop for browser",
   "type": "module",
   "browser": "dist/game-loop.min.js",
   "module": "dist/index.esm.js",
   "types": "types/index.d.ts",
   "files": [
-    "dist"
+    "dist", "types"
   ],
   "repository": {
     "type": "git",
