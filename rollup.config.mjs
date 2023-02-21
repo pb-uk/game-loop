@@ -23,7 +23,7 @@ const banner = `/*! ${name} v${pkg.version} ${datetime}
 `;
 
 // Target ECMAScript version (es2017 is good for all modern browsers in 2023).
-const target = 'es2017';
+const target = 'es2020';
 
 export default [
   {
