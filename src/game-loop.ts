@@ -1,8 +1,8 @@
 type ConfigParameter = Record<string, unknown>;
 type StateParameter = Record<string, unknown>;
-type GameStateParameter = 'notStarted' | 'running' | 'stopped';
+type GameStateParameter = 'hidden' |'notStarted' | 'running' | 'stopped';
 
-interface CreateGameParameters {
+export interface GameParameters {
   config?: ConfigParameter;
   render?: LoopFunction;
   update?: LoopFunction;
@@ -19,6 +19,9 @@ interface LoopFunctionParameters {
 
 type LoopFunction = (params: LoopFunctionParameters) => void;
 
+// The state is HIDDEN when it is moved off screen while is is running so
+// animation frames will no longer fire.
+const HIDDEN = 'hidden';
 const NOT_STARTED = 'notStarted';
 const RUNNING = 'running';
 const STOPPED = 'stopped';
@@ -27,7 +30,7 @@ const emptyFunction = () => {
   // Does nothing.
 };
 
-const createGame = (params: CreateGameParameters = {}) => {
+const createGame = (params: GameParameters = {}) => {
   const render = params.render ?? emptyFunction;
   const update = params.update ?? emptyFunction;
   const getInitialState = params.getInitialState ?? (() => ({}));
@@ -81,6 +84,20 @@ const createGame = (params: CreateGameParameters = {}) => {
 
   reset();
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (gameState === HIDDEN) {
+        // Resume running.
+        start();
+      }
+    } else {
+      if (gameState === RUNNING) {
+        window.cancelAnimationFrame(rafCallback);
+        gameState = HIDDEN;
+      }
+    }
+  });
+
   return {
     start,
     stop,
@@ -88,4 +105,4 @@ const createGame = (params: CreateGameParameters = {}) => {
   };
 };
 
-export { RUNNING, NOT_STARTED, STOPPED, createGame };
+export { HIDDEN, RUNNING, NOT_STARTED, STOPPED, createGame };
