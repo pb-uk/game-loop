@@ -5,7 +5,6 @@ import { JSDOM } from 'jsdom';
 import * as GameLoop from './game-loop.js';
 
 describe('GameLoop', function () {
-
   beforeEach(function () {
     // eslint-disable-next-line
     // @ts-ignore
@@ -32,7 +31,7 @@ describe('GameLoop', function () {
   it('should call the update and render functions', function () {
     const update = sinon.fake();
     const render = sinon.fake();
-    const spy = sinon.spy(window, 'requestAnimationFrame');
+    const requestAnimationFrameSpy = sinon.spy(window, 'requestAnimationFrame');
     const game = GameLoop.createGame({ update, render });
 
     game.start();
@@ -42,15 +41,36 @@ describe('GameLoop', function () {
     expect(render.called).to.be.false;
 
     // Trigger the animation frame callback.
-    spy.getCall(0).args[0](performance.now());
+    requestAnimationFrameSpy.getCall(0).args[0](performance.now());
     // Need to stop otherwise it will hang waiting for the next animation frame.
     game.stop();
 
+    // Should be called now!
     expect(update.called).to.be.true;
     expect(render.called).to.be.true;
   });
 
   it.skip('should stop/start when the document goes out/comes in to view', function () {
-    expect(false).to.be.true;
+    const visibilitychangeListenerSpy = sinon.spy(document, 'addEventListener');
+    const requestAnimationFrameSpy = sinon.spy(window, 'requestAnimationFrame');
+    const cancelAnimationFrameSpy = sinon.spy(window, 'cancelAnimationFrame');
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+    });
+
+    const game = GameLoop.createGame();
+    expect(requestAnimationFrameSpy.callCount).to.equal(0);
+    game.start();
+    expect(requestAnimationFrameSpy.callCount).to.equal(1);
+    expect(cancelAnimationFrameSpy.callCount).to.equal(0);
+
+    // Trigger the visibility change callback.
+    // document.visibilityState = 'hidden';
+    // visibilitychangeListenerSpy.getCall(0).args[1]();
+    expect(cancelAnimationFrameSpy.callCount).to.equal(1);
+
+    // document.visibilityState = 'visible';
+    // visibilitychangeListenerSpy.getCall(0).args[1]();
+    expect(requestAnimationFrameSpy.callCount).to.equal(1);
   });
 });

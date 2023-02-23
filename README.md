@@ -36,7 +36,12 @@ Create and manage the game loop.
 
 ```js
 // Set up the game and call `update` and `render` once with gameState = 'notStarted'.
-const { start, stop, reset } = GameLoop.createGame({ config, getInitialState, update, render });
+const { start, stop, reset } = GameLoop.createGame({
+  config,
+  getInitialState,
+  update,
+  render,
+});
 
 // Starts the game running, or resumes after `stop()`.
 start();

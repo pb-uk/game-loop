@@ -1,12 +1,20 @@
 type ConfigParameter = Record<string, unknown>;
 type StateParameter = Record<string, unknown>;
-type GameStateParameter = 'hidden' |'notStarted' | 'running' | 'stopped';
+type GameStateParameter =
+  | 'hidden'
+  | 'notStarted'
+  | 'running'
+  | 'stopped'
+  | 'wasHidden';
 
 export interface GameParameters {
   config?: ConfigParameter;
   render?: LoopFunction;
   update?: LoopFunction;
   getInitialState?: (config: ConfigParameter) => StateParameter;
+  // Maximum time (in ms) for a background step, or false to stop counting time
+  // when in the background.
+  stopWhenHidden?: boolean;
 }
 
 interface LoopFunctionParameters {
@@ -25,6 +33,7 @@ const HIDDEN = 'hidden';
 const NOT_STARTED = 'notStarted';
 const RUNNING = 'running';
 const STOPPED = 'stopped';
+const WAS_HIDDEN = 'wasHidden';
 
 const emptyFunction = () => {
   // Does nothing.
@@ -40,17 +49,20 @@ const createGame = (params: GameParameters = {}) => {
   let frameTime: number | null;
   // Cumulative run time in ms.
   let runTime = 0;
-
+  // Current state of the loop runner.
   let gameState: GameStateParameter = NOT_STARTED;
-
+  // Stores the animation frame callback ref. so we can cancel it.
   let rafCallback: number;
+  // Stop when hidden.
+  let stopWhenHidden = false;
+
   let state = getInitialState(config);
 
   const loop = (currentFrameTime: number) => {
     const frameLength = currentFrameTime - (frameTime ?? currentFrameTime);
     frameTime = currentFrameTime;
 
-    if (gameState === RUNNING) {
+    if (gameState === RUNNING || gameState === WAS_HIDDEN) {
       runTime += frameLength;
     }
 
@@ -58,6 +70,9 @@ const createGame = (params: GameParameters = {}) => {
     update({ config, state, frameLength, runTime, gameState });
     render({ config, state, frameLength, runTime, gameState });
 
+    if (gameState === WAS_HIDDEN) {
+      gameState = RUNNING;
+    }
     if (gameState === RUNNING) {
       window.requestAnimationFrame(loop);
     }
@@ -82,27 +97,40 @@ const createGame = (params: GameParameters = {}) => {
     rafCallback = window.requestAnimationFrame(loop);
   };
 
-  reset();
-
-  document.addEventListener('visibilitychange', () => {
+  const visibilitychangeListener = () => {
     if (document.visibilityState === 'visible') {
       if (gameState === HIDDEN) {
         // Resume running.
-        start();
+        if (stopWhenHidden) {
+          frameTime = null;
+        }
+        gameState = WAS_HIDDEN;
+        rafCallback = window.requestAnimationFrame(loop);
       }
     } else {
-      if (gameState === RUNNING) {
-        window.cancelAnimationFrame(rafCallback);
+      if (gameState === RUNNING || gameState === WAS_HIDDEN) {
         gameState = HIDDEN;
+        // Don't want to attempt to render when hidden even if we are still running.
+        window.cancelAnimationFrame(rafCallback);
       }
     }
-  });
+  };
+
+  const setStopWhenHidden = (set = true) => {
+    stopWhenHidden = !!set;
+  };
+
+  reset();
+  setStopWhenHidden(params.stopWhenHidden);
+
+  document.addEventListener('visibilitychange', visibilitychangeListener);
 
   return {
     start,
     stop,
     reset,
+    setStopWhenHidden,
   };
 };
 
-export { HIDDEN, RUNNING, NOT_STARTED, STOPPED, createGame };
+export { HIDDEN, RUNNING, NOT_STARTED, STOPPED, WAS_HIDDEN, createGame };
